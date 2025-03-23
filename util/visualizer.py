@@ -69,7 +69,10 @@ class Visualizer():
         Step 4: create a logging file to store training losses
         """
         self.opt = opt  # cache the option
-        self.display_id = opt.display_id
+        if opt.display_id is None:
+            self.display_id = np.random.randint(100000) * 10  # just a random display id
+        else:
+            self.display_id = opt.display_id
         self.use_html = opt.isTrain and not opt.no_html
         self.win_size = opt.display_winsize
         self.name = opt.name
@@ -210,7 +213,7 @@ class Visualizer():
                 webpage.add_images(ims, txts, links, width=self.win_size)
             webpage.save()
 
-    def plot_current_losses(self, epoch, counter_ratio, losses):
+    def plot_current_losses(self, epoch, counter_ratio, losses, val=False):
         """display the current losses on visdom display: dictionary of error labels and values
 
         Parameters:
@@ -218,22 +221,29 @@ class Visualizer():
             counter_ratio (float) -- progress (percentage) in the current epoch, between 0 to 1
             losses (OrderedDict)  -- training losses stored in the format of (name, float) pairs
         """
-        if not hasattr(self, 'plot_data'):
-            self.plot_data = {'X': [], 'Y': [], 'legend': list(losses.keys())}
-        self.plot_data['X'].append(epoch + counter_ratio)
-        self.plot_data['Y'].append([losses[k] for k in self.plot_data['legend']])
-        try:
-            self.vis.line(
-                X=np.stack([np.array(self.plot_data['X'])] * len(self.plot_data['legend']), 1),
-                Y=np.array(self.plot_data['Y']),
-                opts={
-                    'title': self.name + ' loss over time',
-                    'legend': self.plot_data['legend'],
-                    'xlabel': 'epoch',
-                    'ylabel': 'loss'},
-                win=self.display_id)
-        except VisdomExceptionBase:
-            self.create_visdom_connections()
+        if not val:
+            # don't log validation losses with visdom
+            # (JWW 20240419 not obvious to me how to integrate my validation loss logging 
+            #               approach with visdom, but I'm only using wandb anyway )
+            if not hasattr(self, 'plot_data'):
+                self.plot_data = {'X': [], 'Y': [], 'legend': list(losses.keys())}
+            self.plot_data['X'].append(epoch + counter_ratio)
+            self.plot_data['Y'].append([losses[k] for k in self.plot_data['legend']])
+            try:
+              if self.display_id > 0:  # Only attempt to plot with Visdom if display_id > 0
+                self.vis.line(
+                    X=np.stack([np.array(self.plot_data['X'])] * len(self.plot_data['legend']), 1),
+                    Y=np.array(self.plot_data['Y']),
+                    opts={
+                        'title': self.name + ' loss over time',
+                        'legend': self.plot_data['legend'],
+                        'xlabel': 'epoch',
+                        'ylabel': 'loss'},
+                    win=self.display_id)
+            except VisdomExceptionBase:
+                self.create_visdom_connections()
+        
+        # Log losses to WandB regardless of display_id
         if self.use_wandb:
             self.wandb_run.log(losses)
 
