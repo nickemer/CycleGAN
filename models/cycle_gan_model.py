@@ -109,20 +109,20 @@ class CycleGANModel(BaseModel):
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
-def forward(self):
-    """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-    self.fake_B = self.netG_A(self.real_A)  # G_A(A)
-    self.fake_A = self.netG_B(self.real_B)  # G_B(B)
+    def forward(self):
+        """Run forward pass; called by both functions <optimize_parameters> and <test>."""
+        self.fake_B = self.netG_A(self.real_A)  # G_A(A)
+        self.fake_A = self.netG_B(self.real_B)  # G_B(B)
 
-    if self.opt.isTrain:  # Only add noise during training
-        self.noise_fake_B = self.fake_B + torch.randn_like(self.fake_B) * self.opt.noise_std
-        self.noise_fake_A = self.fake_A + torch.randn_like(self.fake_A) * self.opt.noise_std
-    else:  # During testing, use the original outputs without noise
-        self.noise_fake_B = self.fake_B
-        self.noise_fake_A = self.fake_A
+        if self.opt.isTrain:  # Only add noise during training
+            self.noise_fake_B = self.fake_B + torch.randn_like(self.fake_B) * self.opt.noise_std
+            self.noise_fake_A = self.fake_A + torch.randn_like(self.fake_A) * self.opt.noise_std
+        else:  # During testing, use the original outputs without noise
+            self.noise_fake_B = self.fake_B
+            self.noise_fake_A = self.fake_A
 
-    self.rec_A = self.netG_B(self.noise_fake_B)  # G_B(G_A(A))
-    self.rec_B = self.netG_A(self.noise_fake_A)  # G_A(G_B(B))
+        self.rec_A = self.netG_B(self.noise_fake_B)  # G_B(G_A(A))
+        self.rec_B = self.netG_A(self.noise_fake_A)  # G_A(G_B(B))
 
 
     def backward_D_basic(self, netD, real, fake):
