@@ -69,10 +69,7 @@ class Visualizer():
         Step 4: create a logging file to store training losses
         """
         self.opt = opt  # cache the option
-        if opt.display_id is None:
-            self.display_id = np.random.randint(100000) * 10  # just a random display id
-        else:
-            self.display_id = opt.display_id
+        self.display_id = opt.display_id
         self.use_html = opt.isTrain and not opt.no_html
         self.win_size = opt.display_winsize
         self.name = opt.name
